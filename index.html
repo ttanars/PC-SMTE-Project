@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog ประชาสัมพันธ์</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- DataTables CSS for Bootstrap 5 -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/3.0.2/css/responsive.bootstrap5.css">
+    <!-- Google Fonts - Sarabun -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* --- Custom Styles --- */
+        body {
+            display: flex;
+            min-height: 100vh;
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        /* --- Sidebar Styles (New Dark Style) --- */
+        #sidebar {
+            min-width: 280px;
+            max-width: 280px;
+            background: #212529;
+            color: #fff;
+            transition: all 0.3s ease-in-out;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+        #sidebar.active { margin-left: -280px; }
+        .sidebar-header {
+            padding: 1.25rem 1.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-bottom: 1px solid #343a40;
+        }
+        #sidebar .components { 
+            padding: 1rem;
+            flex-grow: 1;
+        }
+        #sidebar ul li a {
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            color: #adb5bd;
+            text-decoration: none;
+            transition: all 0.2s;
+            border-radius: 0.375rem; /* 6px */
+            margin-bottom: 0.25rem;
+        }
+        #sidebar ul li a:hover {
+            color: #fff;
+            background: #343a40;
+        }
+        #sidebar ul li a.active {
+            color: #fff;
+            background: #0d6efd;
+            font-weight: bold;
+        }
+        #sidebar ul li a .bi {
+            margin-right: 0.75rem;
+            font-size: 1.2rem;
+        }
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid #343a40;
+        }
+        .sidebar-footer .dropdown-toggle {
+            color: #fff;
+            text-decoration: none;
+        }
+        .sidebar-footer .dropdown-toggle::after {
+            display: inline-block;
+            margin-left: .255em;
+            vertical-align: .255em;
+            content: "";
+            border-top: .3em solid;
+            border-right: .3em solid transparent;
+            border-bottom: 0;
+            border-left: .3em solid transparent;
+        }
+        .sidebar-footer img {
+            width: 32px;
+            height: 32px;
+        }
+
+        /* --- Content Styles --- */
+        #content {
+            width: 100%;
+            padding: 20px;
+            transition: all 0.3s ease-in-out;
+            margin-left: 280px;
+        }
+        #sidebar.active ~ #content { width: 100%; margin-left: 0; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        
+        /* --- DataTable Styles --- */
+        .dynamic-input-group { margin-bottom: 5px; }
+        .dataTables_wrapper .form-control, .dataTables_wrapper .form-select { background-color: #fff; }
+        .table td.text-center { vertical-align: middle; }
+
+        /* --- Multi-step Progress Bar Styles --- */
+        .progress-container { display: flex; justify-content: space-between; align-items: flex-start; position: relative; width: 100%; margin-bottom: 20px; }
+        .step { text-align: center; position: relative; z-index: 1; width: 12.5%; }
+        .step-icon { width: 30px; height: 30px; border-radius: 50%; background-color: #fff; border: 2px solid #dee2e6; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+        .step-label { font-size: 0.8rem; color: #6c757d; }
+        .step.active .step-icon, .step.completed .step-icon { background-color: #0d6efd; border-color: #0d6efd; color: white; }
+        .step.completed .step-icon::before { font-family: 'bootstrap-icons'; content: '\F26E'; }
+        .progress-container::before { content: ''; position: absolute; top: 15px; left: 6.25%; right: 6.25%; height: 2px; background-color: #dee2e6; z-index: 0; }
+        #progress-line { position: absolute; top: 15px; left: 6.25%; height: 2px; background-color: #0d6efd; z-index: 0; transition: width 0.4s ease; width: 0; }
+
+        /* --- Responsive Adjustments --- */
+        @media (max-width: 768px) {
+            #sidebar { margin-left: -280px; }
+            #sidebar.active { margin-left: 0; }
+            #content { margin-left: 0; }
+            .step-label { font-size: 0.7rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <nav id="sidebar">
+        <div>
+            <div class="sidebar-header">
+                <i class="fa-solid fa-star"></i> SMTE Projects
+            </div>
+            <ul class="list-unstyled components">
+                <li><a href="#" class="nav-link active" data-target="home-content"><i class="bi bi-house-door"></i>หน้าหลัก</a></li>
+                <li><a href="#" class="nav-link" data-target="project-list-content"><i class="bi bi-table"></i>รายการโครงงาน</a></li>
+                <li><a href="#" class="nav-link protected-link" data-target="review-content"><i class="bi bi-check2-square"></i>ตรวจโครงงาน</a></li>
+                <li><a href="#" class="nav-link protected-link" data-target="admin-content"><i class="bi bi-person-gear"></i>สำหรับ ADMIN</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Page Content -->
+    <div id="content">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light rounded-3 shadow-sm mb-4">
+            <div class="container-fluid">
+                <button type="button" id="sidebarCollapse" class="btn btn-primary"><i class="bi bi-list"></i><span class="ms-2 d-none d-md-inline">ซ่อน/แสดงเมนู</span></button>
+                <a id="page-title" class="navbar-brand ms-3" href="#">หน้าหลัก</a>
+            </div>
+        </nav>
+
+        <!-- Home Content Section -->
+        <div id="home-content" class="content-section active">
+             <div class="p-5 mb-4 bg-white rounded-3 shadow-sm">
+                <div class="container-fluid py-5">
+                    <h1 class="display-5 fw-bold">ยินดีต้อนรับสู่ระบบโครงงาน SMTE!</h1>
+                    <p class="col-md-8 fs-4">นี่คือพื้นที่สำหรับเนื้อหาประชาสัมพันธ์ ข่าวสาร และกิจกรรมล่าสุดจากเรา</p>
+                    <button class="btn btn-primary btn-lg" type="button">เรียนรู้เพิ่มเติม</button>
+                </div>
+            </div>
+            <h2>ข่าวสารล่าสุด</h2><hr>
+            <div class="row">
+                <div class="col-md-6 mb-4"><div class="card shadow-sm h-100"><img src="https://placehold.co/600x400/007bff/white?text=ข่าวที่" class="card-img-top" alt="ภาพข่าวที่ 1"><div class="card-body d-flex flex-column"><h5 class="card-title">หัวข้อข่าวประชาสัมพันธ์</h5><p class="card-text">รายละเอียดเกี่ยวกับข่าวประชาสัมพันธ์ล่าสุด...</p><a href="#" class="btn btn-outline-primary mt-auto">อ่านต่อ</a></div></div></div>
+                <div class="col-md-6 mb-4"><div class="card shadow-sm h-100"><img src="https://placehold.co/600x400/28a745/white?text=กิจกรรม" class="card-img-top" alt="ภาพกิจกรรม"><div class="card-body d-flex flex-column"><h5 class="card-title">กิจกรรมที่จะเกิดขึ้นเร็วๆ นี้</h5><p class="card-text">ขอเชิญทุกท่านร่วมกิจกรรมพิเศษของเรา...</p><a href="#" class="btn btn-outline-primary mt-auto">ดูรายละเอียด</a></div></div></div>
+            </div>
+        </div>
+
+        <!-- Admin Content Section -->
+        <div id="admin-content" class="content-section">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3>จัดการรายการเมนูโครงงาน</h3>
+                    <button id="add-project-row" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>เพิ่มโครงงาน</button>
+                </div>
+                <div class="card-body">
+                    <table id="menu-management-table" class="table table-striped table-bordered" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>กลุ่มที่</th>
+                                <th>ชื่อโครงงาน</th>
+                                <th>ผู้จัดทำ</th>
+                                <th>ครูที่ปรึกษา</th>
+                                <th>ลิงค์เอกสาร</th>
+                                <th>สถานะ</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="card-footer text-end">
+                    <button id="save-data-btn" class="btn btn-success"><i class="bi bi-save me-2"></i>บันทึกข้อมูลทั้งหมด</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Project List Content Section -->
+        <div id="project-list-content" class="content-section">
+            <div class="card shadow-sm">
+                <div class="card-header"><h3>รายการโครงงานทั้งหมด</h3></div>
+                <div class="card-body">
+                    <table id="project-list-table" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>กลุ่มที่</th>
+                                <th>ชื่อโครงงาน</th>
+                                <th>ผู้จัดทำ</th>
+                                <th>ครูที่ปรึกษา</th>
+                                <th>ลิงค์เอกสาร</th>
+                                <th>สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Review Content Section -->
+        <div id="review-content" class="content-section">
+            <div class="card shadow-sm">
+                <div class="card-header"><h3>ตรวจความคืบหน้าโครงงาน</h3></div>
+                <div class="card-body">
+                    <table id="review-table" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>กลุ่มที่</th>
+                                <th>ชื่อโครงงาน</th>
+                                <th>ผู้จัดทำ</th>
+                                <th>ครูที่ปรึกษา</th>
+                                <th>ลิงค์เอกสาร</th>
+                                <th>เปลี่ยนสถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Progress Modal -->
+    <div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="progressModalLabel">ความก้าวหน้าการจัดทำโครงงาน</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body pt-4">
+            <div class="progress-container">
+                <div id="progress-line"></div>
+                <!-- Steps will be generated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Password Modal -->
+    <div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="passwordModalLabel">กรุณาใส่รหัสผ่าน</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="passwordForm">
+              <div class="mb-3">
+                <label for="passwordInput" class="form-label">รหัสผ่าน</label>
+                <input type="password" class="form-control" id="passwordInput" required>
+                <div id="passwordError" class="form-text text-danger" style="display: none;"></div>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">เข้าสู่ระบบ</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.js"></script>
+    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.js"></script>
+    <script src="https://cdn.datatables.net/responsive/3.0.2/js/dataTables.responsive.js"></script>
+    <script src="https://cdn.datatables.net/responsive/3.0.2/js/responsive.bootstrap5.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // --- Global Data & Config ---
+            const progressSteps = ["ส่วนหน้า", "บท 1", "บท 2", "บท 3", "บท 4", "บท 5", "ส่วนท้าย", "Complete"];
+            let projectData = [
+                {
+                    group: "1",
+                    name: "โครงงานพัฒนาระบบ AI",
+                    authors: ["นายใจดี มีเมตตา"],
+                    advisors: ["ครูใจดี สอนเก่ง"],
+                    link: "https://example.com/doc",
+                    status: 2 // 0-indexed, 2 means "บท 2"
+                }
+            ];
+            let targetPageAfterAuth = null;
+            const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+
+            // --- Sidebar Toggle ---
+            $('#sidebarCollapse').on('click', function () { $('#sidebar').toggleClass('active'); });
+
+            // --- Page Switching Logic ---
+            function switchToPage(linkElement) {
+                const targetId = linkElement.data('target');
+                if (!targetId) return;
+
+                $('.nav-link').removeClass('active');
+                linkElement.addClass('active');
+                $('#page-title').text(linkElement.text().trim());
+                
+                $('.content-section').removeClass('active');
+                $('#' + targetId).addClass('active');
+
+                if (['admin-content', 'project-list-content', 'review-content'].includes(targetId)) {
+                    $($.fn.dataTable.tables(true)).DataTable().columns.adjust().responsive.recalc();
+                }
+            }
+
+            // --- Event Handlers for Links ---
+            $('.nav-link.protected-link').on('click', function(e) {
+                e.preventDefault();
+                targetPageAfterAuth = $(this).data('target');
+                $('#passwordInput').val('');
+                $('#passwordError').hide();
+                passwordModal.show();
+            });
+
+            $('.nav-link:not(.protected-link)').on('click', function(e) {
+                e.preventDefault();
+                switchToPage($(this));
+            });
+            
+            // --- Password Form Submission ---
+            $('#passwordForm').on('submit', function(e) {
+                e.preventDefault();
+                const password = $('#passwordInput').val();
+                if (password === '1234') {
+                    passwordModal.hide();
+                    const link = $(`.nav-link[data-target="${targetPageAfterAuth}"]`);
+                    switchToPage(link);
+                } else {
+                    $('#passwordError').text('รหัสผ่านไม่ถูกต้อง').show();
+                }
+            });
+
+            // --- DataTable Initialization ---
+            const adminTable = $('#menu-management-table').DataTable({ responsive: true, paging: false, info: false, searching: false, language: { url: "https://cdn.datatables.net/plug-ins/2.0.8/i18n/th.json" } });
+            
+            const projectListTable = $('#project-list-table').DataTable({ 
+                responsive: true, 
+                language: { url: "https://cdn.datatables.net/plug-ins/2.0.8/i18n/th.json" },
+                columnDefs: [
+                    { className: "text-center", targets: [0, 4, 5] }
+                ]
+            });
+
+            const reviewTable = $('#review-table').DataTable({ 
+                responsive: true, 
+                language: { url: "https://cdn.datatables.net/plug-ins/2.0.8/i18n/th.json" },
+                columnDefs: [
+                    { className: "text-center", targets: [0, 4, 5] }
+                ]
+            });
+            
+            // --- Helper Functions ---
+            function createDynamicInput(value = '', placeholder = 'เพิ่มชื่อ...') {
+                return `<div class="input-group dynamic-input-group"><input type="text" class="form-control" value="${value}" placeholder="${placeholder}"><button class="btn btn-danger btn-sm remove-item-btn" type="button"><i class="bi bi-trash"></i></button></div>`;
+            }
+
+            function repopulateAdminTable() {
+                adminTable.clear();
+                projectData.forEach(data => {
+                    const authorsHtml = (data.authors || ['']).map(author => createDynamicInput(author)).join('');
+                    const advisorsHtml = (data.advisors || ['']).map(advisor => createDynamicInput(advisor)).join('');
+                    const statusOptions = progressSteps.map((step, index) => `<option value="${index}" ${data.status == index ? 'selected' : ''}>${step}</option>`).join('');
+
+                    adminTable.row.add([
+                        `<input type="number" class="form-control" value="${data.group || ''}">`,
+                        `<input type="text" class="form-control" value="${data.name || ''}">`,
+                        `<div class="dynamic-container">${authorsHtml}</div><button class="btn btn-success btn-sm add-item-btn" type="button"><i class="bi bi-plus-circle"></i> เพิ่มผู้จัดทำ</button>`,
+                        `<div class="dynamic-container">${advisorsHtml}</div><button class="btn btn-success btn-sm add-item-btn" type="button"><i class="bi bi-plus-circle"></i> เพิ่มที่ปรึกษา</button>`,
+                        `<input type="url" class="form-control" value="${data.link || ''}" placeholder="https://example.com/doc">`,
+                        `<select class="form-select">${statusOptions}</select>`,
+                        `<button class="btn btn-danger remove-row-btn"><i class="bi bi-x-circle"></i> ลบแถว</button>`
+                    ]).draw(false);
+                });
+            }
+
+            function updateProjectListTable() {
+                projectListTable.clear();
+                projectData.forEach((proj, index) => {
+                    const authorsList = '<ul>' + proj.authors.map(a => `<li>${a}</li>`).join('') + '</ul>';
+                    const advisorsList = '<ul>' + proj.advisors.map(a => `<li>${a}</li>`).join('') + '</ul>';
+                    const docLink = proj.link ? `<a href="${proj.link}" target="_blank" class="btn btn-sm btn-info">ดูเอกสาร</a>` : 'ไม่มี';
+                    const statusBtn = `<button class="btn btn-sm btn-secondary view-status-btn" data-bs-toggle="modal" data-bs-target="#progressModal" data-project-index="${index}">${progressSteps[proj.status]}</button>`;
+                    projectListTable.row.add([proj.group, proj.name, authorsList, advisorsList, docLink, statusBtn]);
+                });
+                projectListTable.draw();
+            }
+            
+            function updateReviewTable() {
+                reviewTable.clear();
+                projectData.forEach((proj, index) => {
+                    const authorsList = '<ul>' + proj.authors.map(a => `<li>${a}</li>`).join('') + '</ul>';
+                    const advisorsList = '<ul>' + proj.advisors.map(a => `<li>${a}</li>`).join('') + '</ul>';
+                    const docLink = proj.link ? `<a href="${proj.link}" target="_blank">ดูเอกสาร</a>` : 'ไม่มี';
+                    const statusOptions = progressSteps.map((step, i) => `<option value="${i}" ${proj.status == i ? 'selected' : ''}>${step}</option>`).join('');
+                    const statusSelect = `<select class="form-select review-status-select" data-project-index="${index}">${statusOptions}</select>`;
+                    reviewTable.row.add([proj.group, proj.name, authorsList, advisorsList, docLink, statusSelect]);
+                });
+                reviewTable.draw();
+            }
+
+            // --- More Event Handlers ---
+            $('#add-project-row').on('click', function() {
+                 projectData.push({ group: "", name: "", authors: [], advisors: [], link: "", status: 0 });
+                 repopulateAdminTable();
+            });
+            $('#menu-management-table tbody').on('click', '.remove-row-btn', function () {
+                const rowIndex = $(this).closest('tr').index();
+                projectData.splice(rowIndex, 1);
+                repopulateAdminTable();
+            });
+            $('#menu-management-table tbody').on('click', '.add-item-btn', function () { $(this).prev('.dynamic-container').append(createDynamicInput()); });
+            $('#menu-management-table tbody').on('click', '.remove-item-btn', function () { $(this).closest('.dynamic-input-group').remove(); });
+            
+            $('#save-data-btn').on('click', function() {
+                projectData = [];
+                adminTable.rows().every(function() {
+                    const rowNode = this.node();
+                    const authors = Array.from($(rowNode).find('td:eq(2) input')).map(el => el.value).filter(Boolean);
+                    const advisors = Array.from($(rowNode).find('td:eq(3) input')).map(el => el.value).filter(Boolean);
+                    projectData.push({
+                        group: $(rowNode).find('td:eq(0) input').val(),
+                        name: $(rowNode).find('td:eq(1) input').val(),
+                        authors: authors,
+                        advisors: advisors,
+                        link: $(rowNode).find('td:eq(4) input').val(),
+                        status: parseInt($(rowNode).find('td:eq(5) select').val())
+                    });
+                });
+                updateProjectListTable();
+                updateReviewTable();
+                alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
+            });
+            
+            $('#review-table tbody').on('change', '.review-status-select', function() {
+                const newStatus = parseInt($(this).val());
+                const projectIndex = parseInt($(this).data('project-index'));
+                if (projectData[projectIndex]) {
+                    projectData[projectIndex].status = newStatus;
+                    updateProjectListTable();
+                    repopulateAdminTable();
+                }
+            });
+
+            // --- Modal Progress Bar Logic ---
+            const progressModal = document.getElementById('progressModal');
+            progressModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const projectIndex = button.getAttribute('data-project-index');
+                const project = projectData[projectIndex];
+                const status = project.status;
+                const modalBody = progressModal.querySelector('.progress-container');
+                let stepsHtml = '';
+                progressSteps.forEach(label => {
+                    stepsHtml += `<div class="step"><div class="step-icon"></div><div class="step-label">${label}</div></div>`;
+                });
+                modalBody.innerHTML = '<div id="progress-line"></div>' + stepsHtml;
+                const steps = modalBody.querySelectorAll('.step');
+                steps.forEach((step, index) => {
+                    step.classList.remove('active', 'completed');
+                    if (index < status) {
+                        step.classList.add('completed');
+                    } else if (index === status) {
+                        step.classList.add('active');
+                    }
+                });
+                const progressLine = modalBody.querySelector('#progress-line');
+                const adjustedWidth = (status / (progressSteps.length - 1)) * (100 - (100 / progressSteps.length));
+                progressLine.style.width = `${adjustedWidth}%`;
+            });
+
+            // --- Initial Load ---
+            repopulateAdminTable();
+            updateProjectListTable();
+            updateReviewTable();
+        });
+    </script>
+</body>
+</html>
