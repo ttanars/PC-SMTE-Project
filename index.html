@@ -30,7 +30,7 @@
             max-width: 280px;
             background: #212529;
             color: #fff;
-            transition: all 0.3s ease-in-out;
+            transition: margin-left 0.3s ease-in-out;
             position: fixed;
             top: 0;
             left: 0;
@@ -39,7 +39,6 @@
             display: flex;
             flex-direction: column;
         }
-        #sidebar.active { margin-left: -280px; }
         .sidebar-header {
             padding: 1.25rem 1.5rem;
             font-size: 1.5rem;
@@ -58,7 +57,7 @@
             color: #adb5bd;
             text-decoration: none;
             transition: all 0.2s;
-            border-radius: 0.375rem; /* 6px */
+            border-radius: 0.375rem;
             margin-bottom: 0.25rem;
         }
         #sidebar ul li a:hover {
@@ -101,10 +100,9 @@
         #content {
             width: 100%;
             padding: 20px;
-            transition: all 0.3s ease-in-out;
+            transition: margin-left 0.3s ease-in-out;
             margin-left: 280px;
         }
-        #sidebar.active ~ #content { width: 100%; margin-left: 0; }
         .content-section { display: none; }
         .content-section.active { display: block; }
         
@@ -125,10 +123,23 @@
 
         /* --- Responsive Adjustments --- */
         @media (max-width: 768px) {
-            #sidebar { margin-left: -280px; }
-            #sidebar.active { margin-left: 0; }
-            #content { margin-left: 0; }
-            .step-label { font-size: 0.7rem; }
+            #sidebar {
+                margin-left: -280px;
+            }
+            #sidebar.active {
+                margin-left: 0;
+            }
+            #content {
+                margin-left: 0;
+            }
+        }
+        
+        /* Sidebar hidden state for desktop */
+        #sidebar.inactive {
+            margin-left: -280px;
+        }
+        #sidebar.inactive ~ #content {
+            margin-left: 0;
         }
     </style>
 </head>
@@ -330,9 +341,30 @@
             ];
             let targetPageAfterAuth = null;
             const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+            const sidebar = $('#sidebar');
 
-            // --- Sidebar Toggle ---
-            $('#sidebarCollapse').on('click', function () { $('#sidebar').toggleClass('active'); });
+            // --- Sidebar Toggle Logic ---
+            function toggleSidebar() {
+                if (window.innerWidth < 768) {
+                    // On mobile, .active class SHOWS the sidebar
+                    sidebar.toggleClass('active');
+                } else {
+                    // On desktop, .inactive class HIDES the sidebar
+                    sidebar.toggleClass('inactive');
+                }
+            }
+            
+            $('#sidebarCollapse').on('click', function (e) {
+                e.stopPropagation(); // Prevent content click event from firing
+                toggleSidebar();
+            });
+
+            // --- Hide sidebar when clicking on content (mobile only) ---
+            $('#content').on('click', function() {
+                if (window.innerWidth < 768 && sidebar.hasClass('active')) {
+                     sidebar.removeClass('active');
+                }
+            });
 
             // --- Page Switching Logic ---
             function switchToPage(linkElement) {
@@ -350,26 +382,24 @@
                     $($.fn.dataTable.tables(true)).DataTable().columns.adjust().responsive.recalc();
                 }
 
-                // --- CORRECTED: Auto-hide sidebar on mobile after link click ---
-                if (window.innerWidth < 768) {
-                    // On mobile, the .active class SHOWS the sidebar.
-                    // To hide it after a click, we need to REMOVE the .active class.
-                    $('#sidebar').removeClass('active');
+                // --- Auto-hide sidebar on mobile after a menu item is clicked ---
+                if (window.innerWidth < 768 && sidebar.hasClass('active')) {
+                    sidebar.removeClass('active');
                 }
             }
 
             // --- Event Handlers for Links ---
-            $('.nav-link.protected-link').on('click', function(e) {
+            $('.nav-link').on('click', function(e) {
                 e.preventDefault();
-                targetPageAfterAuth = $(this).data('target');
-                $('#passwordInput').val('');
-                $('#passwordError').hide();
-                passwordModal.show();
-            });
-
-            $('.nav-link:not(.protected-link)').on('click', function(e) {
-                e.preventDefault();
-                switchToPage($(this));
+                e.stopPropagation(); // Prevent content click event from firing
+                if ($(this).hasClass('protected-link')) {
+                    targetPageAfterAuth = $(this).data('target');
+                    $('#passwordInput').val('');
+                    $('#passwordError').hide();
+                    passwordModal.show();
+                } else {
+                    switchToPage($(this));
+                }
             });
             
             // --- Password Form Submission ---
@@ -384,6 +414,18 @@
                     $('#passwordError').text('รหัสผ่านไม่ถูกต้อง').show();
                 }
             });
+            
+            // --- Handle Window Resizing ---
+            $(window).on('resize', function() {
+                if (window.innerWidth > 768) {
+                    // If we resize to desktop, remove mobile's 'active' class
+                    sidebar.removeClass('active');
+                } else {
+                    // If we resize to mobile, remove desktop's 'inactive' class
+                    sidebar.removeClass('inactive');
+                }
+            }).trigger('resize'); // Run on page load
+
 
             // --- DataTable Initialization ---
             const adminTable = $('#menu-management-table').DataTable({ responsive: true, paging: false, info: false, searching: false, language: { url: "https://cdn.datatables.net/plug-ins/2.0.8/i18n/th.json" } });
