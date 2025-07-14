@@ -337,6 +337,9 @@
             // --- DATATABLES ---
             const dtOptions = {
                 responsive: true,
+				//paging: false, // แสดงแถวทั้งหมด
+				 pageLength: 15, // กำหนดให้แสดง 15 แถวต่อหน้า
+				//info: false, // ซ่อนข้อมูล "Showing X of Y"
                 language: { url: "https://cdn.datatables.net/plug-ins/2.0.8/i18n/th.json" }
             };
             const adminTable = $('#admin-table').DataTable({ ...dtOptions, paging: false, info: false, searching: false });
