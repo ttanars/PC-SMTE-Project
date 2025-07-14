@@ -127,6 +127,7 @@
                 <li><a href="#" class="nav-link" data-target="project-list-content"><i class="bi bi-table"></i>รายการโครงงาน</a></li>
                 <li><a href="#" class="nav-link protected-link" data-role="Teacher,ADMIN" data-target="review-content"><i class="bi bi-check2-square"></i>ตรวจโครงงาน</a></li>
                 <li><a href="#" class="nav-link protected-link" data-role="ADMIN" data-target="admin-content"><i class="bi bi-person-gear"></i>สำหรับ ADMIN</a></li>
+                <li><a href="#" class="nav-link protected-link" data-role="ADMIN" data-target="user-management-content"><i class="bi bi-people"></i>จัดการผู้ใช้งาน</a></li>
                 <li><a href="#" class="nav-link protected-link" data-role="ADMIN" data-target="log-content"><i class="bi bi-clock-history"></i>ข้อมูลการใช้ระบบ</a></li>
             </ul>
         </div>
@@ -189,6 +190,33 @@
                 </div>
                 <div class="card-footer text-end">
                     <button id="save-data-btn" class="btn btn-success"><i class="bi bi-save me-2"></i>บันทึกข้อมูลทั้งหมดลง Sheet</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Management Content -->
+        <div id="user-management-content" class="content-section">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3>จัดการผู้ใช้งานระบบ</h3>
+                    <button id="add-user-row" class="btn btn-primary"><i class="bi bi-person-plus me-2"></i>เพิ่มผู้ใช้</button>
+                </div>
+                <div class="card-body">
+                    <table id="user-management-table" class="table table-striped table-bordered" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>ชื่อ สกุล</th>
+                                <th>User</th>
+                                <th>Pass</th>
+                                <th>สิทธิ์ (Direct)</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="card-footer text-end">
+                    <button id="save-users-btn" class="btn btn-success"><i class="bi bi-save me-2"></i>บันทึกข้อมูลผู้ใช้ทั้งหมด</button>
                 </div>
             </div>
         </div>
@@ -298,6 +326,7 @@
 
             // --- GLOBAL STATE ---
             let projectData = [];
+            let userData = [];
             let currentUser = null;
             let targetPageAfterAuth = null;
 
@@ -311,6 +340,7 @@
                 language: { url: "https://cdn.datatables.net/plug-ins/2.0.8/i18n/th.json" }
             };
             const adminTable = $('#admin-table').DataTable({ ...dtOptions, paging: false, info: false, searching: false });
+            const userManagementTable = $('#user-management-table').DataTable({ ...dtOptions, paging: false, info: false, searching: false });
             const projectListTable = $('#project-list-table').DataTable({
                 ...dtOptions,
                 columnDefs: [
@@ -408,7 +438,6 @@
                         if (response.status === 'success') {
                             logTable.clear();
                             response.data.forEach(log => {
-                                // Corrected property name from 'timestamp' to 'Timestamp' to match the sheet header
                                 const dateObj = new Date(log.Timestamp);
                                 const timestamp = !isNaN(dateObj) 
                                     ? dateObj.toLocaleString('th-TH', {
@@ -423,7 +452,28 @@
                                     log['การบันทึก']
                                 ]);
                             });
-                            logTable.order([0, 'desc']).draw(); // Sort by timestamp descending
+                            logTable.order([0, 'desc']).draw();
+                            Swal.close();
+                        } else {
+                            throw new Error(response.message);
+                        }
+                    })
+                    .catch(error => Swal.fire('เกิดข้อผิดพลาด', error.message, 'error'));
+            }
+
+            function fetchAndRenderUsers() {
+                showLoading('กำลังโหลดข้อมูลผู้ใช้...');
+                fetch(`${webAppUrl}?action=getUsers`)
+                    .then(res => res.json())
+                    .then(response => {
+                        if (response.status === 'success') {
+                            userData = response.data.map(u => ({
+                                name: u['ชื่อ สกุล'],
+                                user: u.User,
+                                pass: u.Pass,
+                                role: u.Direct
+                            }));
+                            renderUserManagementTable();
                             Swal.close();
                         } else {
                             throw new Error(response.message);
@@ -436,8 +486,25 @@
                 renderAdminTable();
                 renderProjectListTable();
                 renderReviewTable();
-                // Adjust columns after rendering, especially for hidden tables
                 $($.fn.dataTable.tables(true)).DataTable().columns.adjust().responsive.recalc();
+            }
+
+            function renderUserManagementTable() {
+                userManagementTable.clear();
+                userData.forEach((user, index) => {
+                    const roleOptions = `
+                        <option value="Teacher" ${user.role === 'Teacher' ? 'selected' : ''}>Teacher</option>
+                        <option value="ADMIN" ${user.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
+                    `;
+                    userManagementTable.row.add([
+                        `<input type="text" class="form-control" value="${user.name || ''}">`,
+                        `<input type="text" class="form-control" value="${user.user || ''}">`,
+                        `<input type="text" class="form-control" value="${user.pass || ''}">`,
+                        `<select class="form-select">${roleOptions}</select>`,
+                        `<button class="btn btn-danger remove-user-btn" data-index="${index}"><i class="bi bi-trash"></i></button>`
+                    ]);
+                });
+                userManagementTable.draw(false);
             }
 
             function renderAdminTable() {
@@ -512,10 +579,11 @@
                 
                 if (targetId === 'log-content') {
                     fetchAndRenderLogs();
+                } else if (targetId === 'user-management-content') {
+                    fetchAndRenderUsers();
                 }
 
                 $($.fn.dataTable.tables(true)).DataTable().columns.adjust().responsive.recalc();
-                // On mobile, hide sidebar after clicking a link
                 if (window.innerWidth <= 768 && $('#sidebar').hasClass('active')) {
                     $('#sidebar').removeClass('active');
                 }
@@ -622,6 +690,52 @@
                     if (response.status === 'success') {
                         Swal.fire('สำเร็จ', 'บันทึกข้อมูลทั้งหมดเรียบร้อยแล้ว', 'success');
                         fetchInitialData(); // Refresh data from sheet
+                    } else {
+                        throw new Error(response.message);
+                    }
+                })
+                .catch(error => Swal.fire('เกิดข้อผิดพลาด', error.message, 'error'));
+            });
+
+            $('#add-user-row').on('click', () => {
+                userData.push({ name: "", user: "", pass: "", role: "Teacher" });
+                renderUserManagementTable();
+            });
+
+            $('#user-management-table tbody').on('click', '.remove-user-btn', function () {
+                const index = $(this).data('index');
+                userData.splice(index, 1);
+                renderUserManagementTable();
+            });
+
+            $('#save-users-btn').on('click', function() {
+                showLoading('กำลังบันทึกข้อมูลผู้ใช้...');
+                const updatedUsers = [];
+                userManagementTable.rows().every(function() {
+                    const rowNode = this.node();
+                    updatedUsers.push({
+                        name: $(rowNode).find('td:eq(0) input').val(),
+                        user: $(rowNode).find('td:eq(1) input').val(),
+                        pass: $(rowNode).find('td:eq(2) input').val(),
+                        role: $(rowNode).find('td:eq(3) select').val()
+                    });
+                });
+
+                const payload = {
+                    action: 'saveUsers',
+                    data: updatedUsers,
+                    recorder: currentUser ? currentUser.name : 'System'
+                };
+
+                fetch(webAppUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(response => {
+                    if (response.status === 'success') {
+                        Swal.fire('สำเร็จ', 'บันทึกข้อมูลผู้ใช้เรียบร้อยแล้ว', 'success');
+                        fetchAndRenderUsers();
                     } else {
                         throw new Error(response.message);
                     }
